@@ -46,7 +46,7 @@ class globalEvalStyles {
 	 * Evaluates the code referenced by the given style/link element.
 	 * @param {!Element} style
 	 * @param {function()=} defaultFn Optional function to be called
-	 *   when the script has been run.
+	 *   when the style has been run.
 	 * @param {function()=} appendFn Optional function to append the node
 	 *   into document.
 	 *  @return {Element} style
@@ -91,15 +91,35 @@ class globalEvalStyles {
 			return;
 		}
 
-		let loadCount = 0;
-		const callback = function() {
-			if (defaultFn && ++loadCount === styles.length) {
-				async.nextTick(defaultFn);
-			}
-		};
-		for (let i = 0; i < styles.length; i++) {
-			globalEvalStyles.runStyle(styles[i], callback, appendFn);
-		}
+		globalEvalStyles.runStylesInOrder(styles, 0, defaultFn, appendFn);
+	}
+
+	/**
+	 * Runs the given styles elements in the order that they appear.
+	 * @param {!NodeList} styles
+	 * @param {number} index
+	 * @param {function()=} defaultFn Optional function to be called
+	 *   when the styles has been run.
+	 * @param {function()=} appendFn Optional function to append the node
+	 *   into document.
+	 */
+	static runStylesInOrder(styles, index, defaultFn, appendFn) {
+		globalEvalStyles.runStyle(
+			styles.item(index),
+			function() {
+				if (index < styles.length - 1) {
+					globalEvalStyles.runStylesInOrder(
+						styles,
+						index + 1,
+						defaultFn,
+						appendFn
+					);
+				} else if (defaultFn) {
+					async.nextTick(defaultFn);
+				}
+			},
+			appendFn
+		);
 	}
 }
 
